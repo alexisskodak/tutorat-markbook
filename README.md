@@ -29,19 +29,24 @@ composer require symfony/maker-bundle --dev
 
 explication: composer est le gestionnaire et installateur de bibliothèques, `require` est l'action a exécuter, `symfony/maker-bundle` est la bibliotheque a installer, l'option `--dev` précise qu'il faut sauvegarder la bibliotheque en tant que dépendance de développement (elle ne sera pas nécessaire a installer en environnement de Production)
 
-```
-- Creation et configuration de la BDD
+2. # Création et configuration de la BDD
+   
+   - Installation de Doctrine ORM
+   
+   ```bash
+   composer require symfony/orm-pack
+   
+   # l'installation de l'ORM va nous generer quelques fichiers 
+   # et va notamment ecrire une ligne de config dans notre fichier .env,
+   # elle ressemble a:
+   
+   DATABASE_URL="postgresql://postgres:@127.0.0.1:5432/db_name?serverVersion=13.3&charset=utf8"
+   ```
+   
+   
+   
 
-1.  # Installation de Doctrine ORM
-
-```bash
-composer require symfony/orm-pack
-
-# l'installation de l'ORM va nous generer quelques fichiers et va notamment ecrire une ligne de config dans notre fichier .env, elle ressemble a:
-DATABASE_URL="postgresql://postgres:@127.0.0.1:5432/db_name?serverVersion=13.3&charset=utf8"
-```
-
-2. # Création de la BDD
+3. # Création de la BDD
 
 ```bash
 symfony console doctrine:database:create
