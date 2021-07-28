@@ -56,7 +56,7 @@ class Book
 
     /**
      * @ORM\Column(type="boolean", nullable=true)
-     * @Groups({"read:book", "write:book"})
+     * @Groups({"read:book", "write:book", "read:user", "write:user"})
      */
     private $isRead;
 
