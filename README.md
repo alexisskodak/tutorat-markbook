@@ -147,7 +147,7 @@ explication:
 
 - `$email` le nom de la propriété
 
-- `@` une annotation (ou décorateur) en programmation orientée objet, sert a associer des informations ou de la fonctionnalité **complémentaire** a une **propriété** ou une **méthode**. A ne pas confondre avec un **commentaire de documentation**, la différence étant que ce dernier n'aura aucune incidence sur le comportement de la propriété qu'il décore!
+- `@` une annotation c'est de la méta donnée d'une propriété ou d'une méthode, ça peut être utile pour le développeur mais peut également faire office d'instruction particulière pour l'interpréteur PHP. A ne pas confondre avec un **commentaire de documentation**, la différence étant que ce dernier n'a pas vocation à signaler de comportement particulier.
   
   - dans notre cas de figure
     
@@ -156,7 +156,7 @@ explication:
      * @ORM\Column(type="string", length=180, unique=true)
      */
     
-    // On est en train d'indiquer que la propriete qui suit, sera un Objet Colonne ORM, que son contenu sera de type chaine de caracteres, sa longueur maximale de 180 et qu'il sera unique! c.a.d pas deux objets User avec le meme email
+    // Dans ce cas, doctrine va lire ces informations @ORM/Column et fera de sorte que notre propriété de la classe PHP soit bien "traduite" en colonne de la table au niveau SQL
     ```
 
 ## Fin de la parenthèse sur les entités
@@ -175,29 +175,29 @@ symfony console make:migration
 # ceci generera des fichiers dans ./migrations
 ```
 
-Ensuite, si on a pas eu d'erreur, on procède a les exécuter:
+Ensuite, si on a pas eu d'erreur, on les applique:
 
 ```bash
 symfony console doctrine:migration:migrate
 ```
 
-Si ces deux commandes ont abouti sans erreurs, notre BDD a été créée et schématisée selon la logique de nos entités. La BDD est donc prête a être sollicitée en toute sécurité.
+Si ces deux commandes ont abouti sans erreurs, notre BDD a été créée et schématisée selon nos entités / classes PHP. La BDD est donc prête a être sollicitée.
 
 7. # Convertir nos entités en ressources API
 
 ## Introduction a API Platform
 
-API Platform est un bundle Symfony qui nous permet de sérialiser ou "traduire" nos entités PHP en **Ressources d'API REST-Conforme** prêts a être servis via HTTP. 
+API Platform est un bundle Symfony qui nous permet de sérialiser nos classes PHP en **Ressources d'API REST-Conforme** afin d'être servis via HTTP. 
 
 En ajoutant quelques lignes de code a nos entités, API Platform va générer toute la logique nécessaire pour cela.
-(contrôleurs, router, endpoints et les méthodes acceptées, `serializers` JSON, etc). Le tout de manière automatique.
+(contrôleurs, router, endpoints et les méthodes acceptées, etc).
 
 pour cela, il suffit de se rendre dans nos classes d'entités (`src/Entity/NomDeLentite.php`)
-et de les décorer (annoter) avec la ligne `@ApiResource()`:
+et de les annoter avec la ligne `@ApiResource()`:
 
 ```php
 use ApiPlatform\Core\Annotation\ApiResource;
-// Ne pas oublier de faire l'import du decorateur ci dessus !!
+// Ne pas oublier de faire l'import des annotations
 
 /**
  * @ApiResource()
@@ -229,17 +229,17 @@ $ symfony console doctrine:migration:migrate
 
 Maintenant qu'on a un `plainPassword` qui va nous servir d'intermédiaire, on doit créer un `DataPersister` pour l'entité User.
 
-Un `DataPersister` est une classe qui nous permet d'ajouter de la logique supplémentaire lors du processus de `deserialization` avant d'écrire définitivement en BDD.
+Un `DataPersister` est une classe qui nous permet de faire un traitement sur la donnée avant de l'écrire définitivement en BDD.
 
-Dans notre cas de figure, la logique a implémenter est la suivante:
+Dans notre cas de figure, la logique est la suivante:
 
 - On reçoit un MDP 'plain' via requête `HTTP` `POST`
 - On le récupère et on affecte sa valeur au MDP définitif
 - On encode le MDP définitif
-- On supprime le MDP provisoire
-- On écrit et on **persiste** en BDD
+- On supprime le MDP provisoire reçu en plein text
+- On **persiste** en BDD
 
-Un exemple de classe `UserDataPersister` ci dessous
+Un exemple typique de classe `UserDataPersister` ci dessous
 
 ```php
 namespace App\DataPersister;
@@ -326,7 +326,7 @@ class UserDataPersister implements DataPersisterInterface
 }
 ```
 
-Le fonctionnement dans le détail d'un `DataPersister` est en dehors du cadre de ce projet, il faut simplement garder en tête que c'est un moyen utile d'ajouter de la logique lors de l'écriture en BDD. 
+Le fonctionnement dans le détail d'un `DataPersister` est en dehors du cadre de ce projet, il faut simplement garder en tête que c'est un moyen utile d'ajouter un traitement spéifique avant l'écriture en BDD. 
 
 Un autre cas dans lequel un Persister serait utile, c'est pour changer le nom d'un fichier d'image soumis par l'utilisateur, en quelque chose d'unique et de plus structure. Par ex:
 On reçoit en entrée un nom de fichier 
@@ -348,8 +348,8 @@ $ composer require jwt
 $ symfony console lexik:jwt:generate-keypair
 ```
 
-Explication sans trop rentrer dans le détail:
-La clé publique servira a décoder une `token` , tandis que la clé privée servira a générer des nouvelles `token`. Evidemment toutes les 2 sont a garder impérativement de manière sécurisée. **Veiller a ne pas les versionner** (dans .gitignore, cibler le fichier des clés fini en `.pem` contenues dans `/config/jwt`)
+Explication en gros:
+La clé publique servira a décoder une `token` , tandis que la clé privée servira a générer des nouvelles `token` ainsi qu'à valider la signature de la clé publique. Ceci étant de l'information critique de l'application, il faut **Veiller a ne pas les versionner** (dans .gitignore, cibler le fichier des clés fini en `.pem` contenues dans `/config/jwt`)
 
 ### Paramétrer les fonctionnalités de login, déclarer ses pare-feus, et sécuriser les routes dans le fichier `security.yaml`
 
@@ -476,7 +476,7 @@ A ce stade on est prêts a servir des JWT via HTTP afin d'authentifier les utili
 
 Afin de solliciter les ressources auxquels l'utilisateur porteur de ce token a accès, il suffit de mettre le token dans un en-tête ou `header` lors de chaque requête. 
 
-par exemple:
+par exemple, en JavaScript:
 
 ```js
 const headers = {
@@ -488,7 +488,7 @@ const headers = {
 const response = await fetch(`${monUrl}/api/books`, headers)
 ```
 
-**Coté navigateur il faut veiller a garder ces tokens de manière sécurisée** étant donné que, toute personne malveillante avec une token valide pourra potentiellement avoir accès aux informations sensibles de l'utilisateur.
+**Coté navigateur il faut veiller a garder ces tokens de manière sécurisée**, ne jamais le rendre lisibles via des print en console ou dans le document.
 
 ---
 
@@ -498,11 +498,11 @@ const response = await fetch(`${monUrl}/api/books`, headers)
 
 # Optimisations bonus
 
-### Dans le développement informatique, rien n'est jamais achevé.
+### Dans le dév, rien n'est jamais fini à 100%.
 
 #### Quelques problématiques demeurent sans solution jusqu'à présent, notamment:
 
-1. **Une JWT a une durée de validité** au delà de laquelle, elle ne permettra plus a l'utilisateur de récupérer les informations du serveur. Il faut donc qu'il s'authentifie a nouveau grâce a son email + mdp. Mais cela n'est pas du tout pratique pour l'utilisateur. La solution parait elle simple non? affecter une durée de vie illimitée! Cela est possible techniquement, et acceptable pour un projet de type MVP ou une démonstration, pour quelque chose qui est sensé être ouvert au public en revanche, il faut absolument s'abstenir! Une bonne solution est le `refresh token`
+1. **Une JWT a une durée de validité** au delà de laquelle, elle ne permettra plus a l'utilisateur de récupérer les informations du serveur. Il faut donc qu'il s'authentifie a nouveau grâce a son email + mdp. Mais cela n'est pas du tout pratique pour l'utilisateur. La solution parait elle simple non? affecter une durée de vie illimitée! Cela est possible techniquement, et acceptable pour un POC. En revanche, pour une application de production, il faut plutôt s'abstenir. Une bonne solution consiste à renouveller la durée de vie du token via ce qu'on appelle un **refresh token**
 
 2. **Lors de l'authentification distante, seul un JWT est retourné**, suite a cette opération on doit récupérer certaines infos utilisateur en faisant une nouvelle requête vers `/users` et filtrer par identifiant unique (email) afin d'obtenir son `id`, c'est seulement cette dernière qui nous permettra de solliciter d'autres ressources en rapport avec l'utilisateur. Il faut donc, authentifier l'utilisateur, aller chercher son id, et seulement là on est prêts a récupérer d'autres ressources. On peut surement raccourcir la chaîne de requêtes. On verra comment grâce aux écouteurs d'événement `Symfony` 
 
